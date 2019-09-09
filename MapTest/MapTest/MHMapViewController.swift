@@ -29,6 +29,7 @@ class MHMapViewController: UIViewController {
     
     var searchTextField: UITextField!
     var centerPointImgView: UIImageView!  //中间用来定位的point图片
+    var searchFlag: Bool = false
     //var geoCoder: CLGeocoder!  //反解析出地址 根据定位解析出中文地址
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -155,6 +156,7 @@ class MHMapViewController: UIViewController {
     @objc func confirmBtnAction() {
         let txt = self.searchTextField.text
         if txt != "" {
+            self.searchFlag = true
             self.goSearchByKeyword(keyWord: txt!)
         }
     }
@@ -214,7 +216,7 @@ class MHMapViewController: UIViewController {
             self.search = AMapSearchAPI.init()
             self.search.delegate = self
         }
-        self.goSearchByKeyword(keyWord: "西丽二村")
+        self.goSearchByKeyword(keyWord: "深圳北地铁站")
     }
     
     //MARK: - 前往搜索
@@ -238,6 +240,7 @@ extension MHMapViewController: MKMapViewDelegate {
     func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
         print(userLocation.coordinate)
     }
+   
     
     //拖动地图松开后
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
@@ -255,9 +258,10 @@ extension MHMapViewController: MKMapViewDelegate {
         
         let tempPoint = AMapGeoPoint.location(withLatitude: CGFloat(mapView.centerCoordinate.latitude), longitude: CGFloat(mapView.centerCoordinate.longitude))
         self.getPOIByLocation(tmpLocation: tempPoint!)
+        
     }
     
-    
+    //跟据经纬度去poi
     func getPOIByLocation(tmpLocation: AMapGeoPoint)  {
         let request = AMapPOIKeywordsSearchRequest()
         request.requireExtension = true
@@ -280,9 +284,14 @@ extension MHMapViewController: AMapSearchDelegate {
         self.dataArray.removeAllObjects()
         self.dataArray.addObjects(from: response.pois)
         
-        if self.dataArray.count > 0 {
+        if self.dataArray.count > 0 && self.searchFlag == true {
+            self.searchFlag = false
             let firstObj = self.dataArray[0] as! AMapPOI
             print(firstObj.address as Any)
+            if (self.mapView.centerCoordinate.latitude != firstObj.location.latitude) {
+                self.mapView.setCenter(CLLocationCoordinate2D.init(latitude: firstObj.location.latitude, longitude: firstObj.location.longitude), animated: true)
+                
+            }
         }
         self.tableView.reloadData()
     }
